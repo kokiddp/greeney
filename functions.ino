@@ -45,8 +45,10 @@ void greeneySetUp() {
 
   Serial.println("52 - SET DAY HOURS");
   d = readData();
+  interval1 = (3600*d);
   Serial.println("53 - SET NIGHT HOURS");
   n = readData();
+  interval2 = (3600*n);
 }
 
 char readData() {
