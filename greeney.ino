@@ -35,47 +35,64 @@ long unsigned int timeOffset = 0;
 long unsigned int alive = 0;
 long unsigned int longTemp[10];
 long int interval = 0;
-long unsigned int interval1 = 0, interval2 = 0;
+long unsigned int interval1 = 64800, interval2 = 21600;
+int relayPinArray[8];
 
 byte lightOn = 1;
+byte firstOn = 1, firstOff = 1;
 
 void setup() {
   /*
     Wire.begin();
     BH1750_Init(BH1750_address);
   */
-
-  setTime(00, 00, 00, 1, 1, 2016);
-  timeOffset = now();
-
   Serial.begin(SERIAL_RATE);
   Serial.setTimeout(SERIAL_TIMEOUT);
   // Initialize device.
   dht.begin();
-
   sensor_t sensor;
   dht.temperature().getSensor(&sensor);
   dht.humidity().getSensor(&sensor);
   delayMS = sensor.min_delay / 1000;
 
-  Serial.println("len(pinArray)");
+  greeneySetUp();
 
+  Serial.println("len(pinArray)");
   int cmd = readData();
   for (int i = 0; i < cmd; i++) {
     Serial.print("pinArray["); Serial.print(i); Serial.println("]");
     pinMode(readData(), OUTPUT);
   }
+
+  /*
+  for (int i = 0; i <= 4; i++) {
+    Serial.print("relayPinArray["); Serial.print(i); Serial.println("]");
+    relayPinArray[i] = readData();
+    digitalWrite(relayPinArray[i], HIGH);
+  }
+  */
+
+  greeneyLightsOn();
+  firstOn = 1;
 }
 
 void loop() {
 
   Alarm.delay(0);
 
-  /*
+  
   if (lightOn == 1) {
-    Alarm.timerOnce(10, OnceOnly);
+    if (firstOff = 1) {
+      Alarm.timerOnce(interval2, greeneyLightsOff);
+    }
   }
-  */
+
+  else if (lightOn == 0) {
+    if (firstOn = 1) {
+      Alarm.timerOnce(interval1, greeneyLightsOn);
+    }
+  }
+ 
 
   //Serial.print((int)valLx, DEC);
   alive = (now() - timeOffset);
@@ -163,11 +180,11 @@ void loop() {
     case 52 :
       //set day hours
       d = readData();
-      interval1 = (60*d); break;
+      interval1 = (3600*d); break;
     case 53 :
       //set night hours
       n = readData(); 
-      interval2 = (60*n); break;
+      interval2 = (3600*n); break;
     case 54 :
       //read time setting
       Serial.print(hour()); Serial.print(" "); Serial.print(minute()); Serial.print(" "); Serial.print(second());
@@ -194,6 +211,15 @@ void loop() {
       // read the total alive time in seconds
       alive = (now() - timeOffset);
       Serial.println(alive); break;
+    case 60 : 
+      // read the light status
+      Serial.println(lightOn); break;
+    case 61 :
+      //turn the lights on
+      greeneyLightsOn(); break;
+    case 62 :
+      //turn the lights off
+      greeneyLightsOff(); break;
     case 99:
       //just dummy to cancel the current read, needed to prevent lock
       //when the PC side dropped the "w" that we sent
