@@ -54,6 +54,7 @@ void greeneySetUp() {
 char readData() {
   Serial.println("w");
   while (1) {
+    Alarm.delay(0);
     if (Serial.available() > 0) {
       return Serial.parseInt();
     }
