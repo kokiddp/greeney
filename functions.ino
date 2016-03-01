@@ -15,21 +15,41 @@ void greeneySetTime(int h, int mi, int s, int d, int mo, int y) {
 }
 
 void greeneyLightsOn() {
-  digitalWrite(13, HIGH);
+  digitalWrite(pinArray[0], HIGH);
+  //Serial.print("ID: "); Serial.println(Alarm.getTriggeredAlarmId());
+  Alarm.disable(0); Alarm.disable(1);
+  interval1 = (60 * d); // interval1 = (3600 * d);
+  interval2 = (60 * n); // interval2 = (3600 * n);
+  if (!alarmOffDisable) {
+    Alarm.write(0, interval1); Alarm.enable(0);
+  }
+  //Alarm.timerOnce(interval1, greeneyLightsOff);
   lightOn = 1;
-  firstOn = 0;
-  firstOff = 1;
-  Serial.print(hour()); Serial.print(" "); Serial.print(minute()); Serial.print(" "); Serial.print(second());
-      Serial.print(" "); Serial.print(day()); Serial.print(" "); Serial.print(month()); Serial.print(" "); Serial.print(year()); Serial.print(" "); Serial.println("LIGHTS ON");
+  /*
+    firstOn = 0;
+    firstOff = 1;
+  */
+  Serial.print(hour()); Serial.print("\t"); Serial.print(minute()); Serial.print("\t"); Serial.print(second());
+  Serial.print("\t"); Serial.print(day()); Serial.print("\t"); Serial.print(month()); Serial.print("\t"); Serial.print(year()); Serial.print("\t"); Serial.println("LIGHTS ON");
 }
 
 void greeneyLightsOff() {
-  digitalWrite(13, LOW);
+  digitalWrite(pinArray[0], LOW);
+  //Serial.print("ID: "); Serial.println(Alarm.getTriggeredAlarmId());
+  Alarm.disable(0); Alarm.disable(1);
+  interval1 = (60 * d); // interval1 = (3600 * d);
+  interval2 = (60 * n); // interval2 = (3600 * n);
+  if (!alarmOnDisable) {
+    Alarm.write(1, interval2); Alarm.enable(1);
+  }
+  //Alarm.timerOnce(interval2, greeneyLightsOn);
   lightOn = 0;
-  firstOn = 1;
-  firstOff = 0;
-  Serial.print(hour()); Serial.print(" "); Serial.print(minute()); Serial.print(" "); Serial.print(second());
-      Serial.print(" "); Serial.print(day()); Serial.print(" "); Serial.print(month()); Serial.print(" "); Serial.print(year()); Serial.print(" "); Serial.println("LIGHTS OFF");
+  /*
+    firstOn = 1;
+    firstOff = 0;
+  */
+  Serial.print(hour()); Serial.print("\t"); Serial.print(minute()); Serial.print("\t"); Serial.print(second());
+  Serial.print("\t"); Serial.print(day()); Serial.print("\t"); Serial.print(month()); Serial.print("\t"); Serial.print(year()); Serial.print("\t"); Serial.println("LIGHTS OFF");
 }
 
 void greeneySetUp() {
@@ -42,13 +62,6 @@ void greeneySetUp() {
   temp[6] = readData();
   timeOffset = now();
   greeneySetTime(temp[1], temp[2], temp[3], temp[4], temp[5], temp[6]);
-
-  Serial.println("52 - SET DAY HOURS");
-  d = readData();
-  interval1 = (3600*d);
-  Serial.println("53 - SET NIGHT HOURS");
-  n = readData();
-  interval2 = (3600*n);
 }
 
 char readData() {

@@ -29,17 +29,18 @@ byte buff[2];
 //float valLx = 0;
 int temp[10];
 int ha, h = 0;
-int d = 18;
-int n = 6;
+int d = 1;
+int n = 1;
 long unsigned int timeOffset = 0;
 long unsigned int alive = 0;
 long unsigned int longTemp[10];
 long int interval = 0;
-long unsigned int interval1 = 64800, interval2 = 21600;
-int relayPinArray[8];
+long unsigned int interval1 = 60, interval2 = 60;
+int pinArray[100];
 
+boolean alarmOnDisable = true, alarmOffDisable = true;
 byte lightOn = 1;
-byte firstOn = 1, firstOff = 1;
+//byte firstOn = 1, firstOff = 1;
 
 void setup() {
   /*
@@ -57,44 +58,51 @@ void setup() {
 
   greeneySetUp();
 
-  Serial.println("len(pinArray)");
+  // Serial.println("len(pinArray)");
   int cmd = readData();
   for (int i = 0; i < cmd; i++) {
-    Serial.print("pinArray["); Serial.print(i); Serial.println("]");
-    pinMode(readData(), OUTPUT);
+    // Serial.print("pinArray["); Serial.print(i); Serial.println("]");
+    pinArray[i] = readData();
+    pinMode(pinArray[i], OUTPUT);
   }
 
   /*
-  for (int i = 0; i <= 4; i++) {
+    for (int i = 0; i <= 4; i++) {
     Serial.print("relayPinArray["); Serial.print(i); Serial.println("]");
     relayPinArray[i] = readData();
     digitalWrite(relayPinArray[i], HIGH);
-  }
+    }
   */
-
+  Alarm.timerRepeat(interval1, greeneyLightsOff); //ID 0
+  Alarm.timerRepeat(interval2, greeneyLightsOn);  //ID 1
+  Alarm.disable(0);
+  Alarm.disable(1);
   greeneyLightsOn();
-  firstOn = 1;
+  //firstOn = 1;
 }
 
 void loop() {
 
   Alarm.delay(0);
-
   
-  if (lightOn == 1) {
-    if (firstOff = 1) {
-      Alarm.timerOnce(interval2, greeneyLightsOff);
+  /*
+    if (lightOn == 1) {
+      if (firstOff = 1) {
+        Alarm.timerOnce(interval2, greeneyLightsOff);
+        firstOff = 0;
+      }
     }
-  }
 
-  else if (lightOn == 0) {
-    if (firstOn = 1) {
-      Alarm.timerOnce(interval1, greeneyLightsOn);
+    if (lightOn == 0) {
+      if (firstOn = 1) {
+        Alarm.timerOnce(interval1, greeneyLightsOn);
+        firstOn = 0;
+      }
     }
-  }
- 
+  */
 
   //Serial.print((int)valLx, DEC);
+  
   alive = (now() - timeOffset);
 
   sensor_t sensor;
@@ -180,20 +188,20 @@ void loop() {
     case 52 :
       //set day hours
       d = readData();
-      interval1 = (3600*d); break;
+      interval1 = (60 * d); break; // interval1 = (3600 * d); break;
     case 53 :
       //set night hours
-      n = readData(); 
-      interval2 = (3600*n); break;
+      n = readData();
+      interval2 = (60 * n); break; // interval2 = (3600 * n); break;
     case 54 :
       //read time setting
-      Serial.print(hour()); Serial.print(" "); Serial.print(minute()); Serial.print(" "); Serial.print(second());
-      Serial.print(" "); Serial.print(day()); Serial.print(" "); Serial.print(month()); Serial.print(" "); Serial.println(year()); break;
+      Serial.print(hour()); Serial.print("\t"); Serial.print(minute()); Serial.print("\t"); Serial.print(second());
+      Serial.print("\t"); Serial.print(day()); Serial.print("\t"); Serial.print(month()); Serial.print("\t"); Serial.println(year()); break;
     case 55:
       //set time
       /*
         for (int i=1; i <= 6; i++){
-        temp[i] = readData();
+          temp[i] = readData();
         }
       */
       //longTemp[1] = now();
@@ -204,14 +212,14 @@ void loop() {
       temp[5] = readData();
       temp[6] = readData();
       greeneySetTime(temp[1], temp[2], temp[3], temp[4], temp[5], temp[6]); break;
-      //setTime(temp[1], temp[2], temp[3], temp[4], temp[5], temp[6]);
-      //longTemp[2] = now();
-      //timeOffset = (timeOffset + (longTemp[2] - longTemp[1])); break;
+    //setTime(temp[1], temp[2], temp[3], temp[4], temp[5], temp[6]);
+    //longTemp[2] = now();
+    //timeOffset = (timeOffset + (longTemp[2] - longTemp[1])); break;
     case 56 :
       // read the total alive time in seconds
       alive = (now() - timeOffset);
       Serial.println(alive); break;
-    case 60 : 
+    case 60 :
       // read the light status
       Serial.println(lightOn); break;
     case 61 :
@@ -220,6 +228,37 @@ void loop() {
     case 62 :
       //turn the lights off
       greeneyLightsOff(); break;
+    case 63 :
+      // turn the on timer on
+      Alarm.enable(1);
+      alarmOnDisable = false; break;
+    case 64 :
+      // turn the off timer on
+      Alarm.enable(0);
+      alarmOffDisable = false; break;
+    case 65 :
+      // turn the on timer off
+      Alarm.disable(1);
+      alarmOnDisable = true; break;
+    case 66 :
+      // turn the off timer off
+      Alarm.disable(0);
+      alarmOffDisable = true; break;
+    case 67 :
+      // turn both timers on
+      d = readData();
+      interval1 = (60 * d); //interval1 = (3600 * d);
+      n = readData();
+      interval2 = (60 * n); //interval2 = (3600 * n); 
+      Alarm.write(0, interval1); Alarm.enable(0);
+      Alarm.write(1, interval2); Alarm.enable(1);
+      alarmOnDisable = false;
+      alarmOffDisable = false; break;
+    case 68 :
+      Alarm.disable(0);
+      Alarm.disable(1);
+      alarmOnDisable = true;
+      alarmOffDisable = true; break;
     case 99:
       //just dummy to cancel the current read, needed to prevent lock
       //when the PC side dropped the "w" that we sent
@@ -234,7 +273,7 @@ void loop() {
   void BH1750_Init(int address) {
 
   Wire.beginTransmission(address);
-  Wire.write(0x10); // 1 [lux]
+  Wire.write(0x10); // 1 [lux] resolution
   Wire.endTransmission();
   }
 
