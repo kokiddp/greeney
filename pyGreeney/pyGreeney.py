@@ -15,7 +15,8 @@ class pyGreeney(object):
     def __str__(self):
         return "Arduino is on port %s at %d baudrate" %(self.serial.port, self.serial.baudrate)
 
-    def output(self, pinArray, dayHours, nightHours):
+    def output(self, pinArray):
+    #def output(self, pinArray, dayHours, nightHours):
 
         self.__sendData(time.strftime("%H"))
         self.__sendData(time.strftime("%M"))
@@ -24,8 +25,8 @@ class pyGreeney(object):
         self.__sendData(time.strftime("%m"))
         self.__sendData(time.strftime("%y"))
 
-        self.__sendData(dayHours)
-        self.__sendData(nightHours)
+        #self.__sendData(dayHours)
+        #self.__sendData(nightHours)
 
         self.__sendData(len(pinArray))
 
