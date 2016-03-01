@@ -230,11 +230,15 @@ void loop() {
       greeneyLightsOff(); break;
     case 63 :
       // turn the on timer on
-      Alarm.enable(1);
+      n = readData();
+      interval2 = (60 * n); //interval2 = (3600 * n);
+      Alarm.write(1, interval2); Alarm.enable(1);
       alarmOnDisable = false; break;
     case 64 :
       // turn the off timer on
-      Alarm.enable(0);
+      d = readData();
+      interval1 = (60 * d); //interval1 = (3600 * d);
+      Alarm.write(0, interval1); Alarm.enable(0);
       alarmOffDisable = false; break;
     case 65 :
       // turn the on timer off
@@ -255,6 +259,7 @@ void loop() {
       alarmOnDisable = false;
       alarmOffDisable = false; break;
     case 68 :
+      // turn both timers off
       Alarm.disable(0);
       Alarm.disable(1);
       alarmOnDisable = true;
