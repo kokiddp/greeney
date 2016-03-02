@@ -1,9 +1,9 @@
 #ifndef SERIAL_RATE
-#define SERIAL_RATE         9600
+  #define SERIAL_RATE         9600
 #endif
 
 #ifndef SERIAL_TIMEOUT
-#define SERIAL_TIMEOUT      5
+  #define SERIAL_TIMEOUT      5
 #endif
 
 #include <Adafruit_Sensor.h>
@@ -12,6 +12,7 @@
 //#include <Wire.h>
 #include <Time.h>
 #include <TimeAlarms.h>
+#include <EEPROM.h>
 
 #define DHTPIN            2         // Pin which is connected to the DHT sensor.
 
@@ -31,6 +32,7 @@ int temp[10];
 int ha, h = 0;
 int d = 1;
 int n = 1;
+int command = 99;
 long unsigned int timeOffset = 0;
 long unsigned int alive = 0;
 long unsigned int longTemp[10];
@@ -38,9 +40,8 @@ long int interval = 0;
 long unsigned int interval1 = 60, interval2 = 60;
 int pinArray[100];
 
-boolean alarmOnDisable = true, alarmOffDisable = true;
+boolean alarmOnDisable = true, alarmOffDisable = true, automation = false, restore = false;
 byte lightOn = 1;
-//byte firstOn = 1, firstOff = 1;
 
 void setup() {
   /*
@@ -49,7 +50,7 @@ void setup() {
   */
   Serial.begin(SERIAL_RATE);
   Serial.setTimeout(SERIAL_TIMEOUT);
-  // Initialize device.
+
   dht.begin();
   sensor_t sensor;
   dht.temperature().getSensor(&sensor);
@@ -58,57 +59,30 @@ void setup() {
 
   greeneySetUp();
 
-  // Serial.println("len(pinArray)");
-  int cmd = readData();
-  for (int i = 0; i < cmd; i++) {
-    // Serial.print("pinArray["); Serial.print(i); Serial.println("]");
-    pinArray[i] = readData();
-    pinMode(pinArray[i], OUTPUT);
-  }
-
-  /*
-    for (int i = 0; i <= 4; i++) {
-    Serial.print("relayPinArray["); Serial.print(i); Serial.println("]");
-    relayPinArray[i] = readData();
-    digitalWrite(relayPinArray[i], HIGH);
-    }
-  */
   Alarm.timerRepeat(interval1, greeneyLightsOff); //ID 0
   Alarm.timerRepeat(interval2, greeneyLightsOn);  //ID 1
-  Alarm.disable(0);
-  Alarm.disable(1);
-  greeneyLightsOn();
-  //firstOn = 1;
+
+  if (restore) {
+    greeneyRestore();
+  }
+  else {
+    greeneyAutomationOff();
+    greeneyLightsOn();
+  }
 }
 
 void loop() {
 
   Alarm.delay(0);
   
-  /*
-    if (lightOn == 1) {
-      if (firstOff = 1) {
-        Alarm.timerOnce(interval2, greeneyLightsOff);
-        firstOff = 0;
-      }
-    }
-
-    if (lightOn == 0) {
-      if (firstOn = 1) {
-        Alarm.timerOnce(interval1, greeneyLightsOn);
-        firstOn = 0;
-      }
-    }
-  */
-
-  //Serial.print((int)valLx, DEC);
-  
   alive = (now() - timeOffset);
 
   sensor_t sensor;
   sensors_event_t event;
 
-  switch (readData()) {
+  command = readData();
+
+  switch (command) {
     case 0 :
       //set digital low
       digitalWrite(readData(), LOW); break;
@@ -176,6 +150,7 @@ void loop() {
       } break;
     */
     case 30 :
+      // read moisture sensure value
       temp[1] = readData();
       temp[2] = readData();
       Serial.println(greeneyMoistSens(temp[1], temp[2])); break;
@@ -212,9 +187,7 @@ void loop() {
       temp[5] = readData();
       temp[6] = readData();
       greeneySetTime(temp[1], temp[2], temp[3], temp[4], temp[5], temp[6]); break;
-    //setTime(temp[1], temp[2], temp[3], temp[4], temp[5], temp[6]);
-    //longTemp[2] = now();
-    //timeOffset = (timeOffset + (longTemp[2] - longTemp[1])); break;
+
     case 56 :
       // read the total alive time in seconds
       alive = (now() - timeOffset);
@@ -228,42 +201,78 @@ void loop() {
     case 62 :
       //turn the lights off
       greeneyLightsOff(); break;
-    case 63 :
-      // turn the on timer on
-      n = readData();
-      interval2 = (60 * n); //interval2 = (3600 * n);
-      Alarm.write(1, interval2); Alarm.enable(1);
-      alarmOnDisable = false; break;
-    case 64 :
-      // turn the off timer on
-      d = readData();
-      interval1 = (60 * d); //interval1 = (3600 * d);
-      Alarm.write(0, interval1); Alarm.enable(0);
-      alarmOffDisable = false; break;
-    case 65 :
-      // turn the on timer off
-      Alarm.disable(1);
-      alarmOnDisable = true; break;
-    case 66 :
-      // turn the off timer off
-      Alarm.disable(0);
-      alarmOffDisable = true; break;
-    case 67 :
+    
+    case 80 :
+      // set whether load settings from EEPROM on start
+      temp[0] = readData();
+      EEPROM.write(2, temp[0]); break;
+
+    case 81 :
+      // read the day hours value from EEEPROM
+      Serial.println(EEPROM.read(0)); break;
+
+    case 82 :
+      // read the night hours value from EEEPROM
+      Serial.println(EEPROM.read(1)); break;
+
+    case 83 :
+      // write the current day hours value to EEEPROM
+      EEPROM.write(0, d); break;
+
+    case 84 :
+      // write the current night hours value to EEEPROM
+      EEPROM.write(1, n); break;
+
+    case 85 :
+      // set the day hours from the EEEPROM
+      d =  EEPROM.read(0); break;
+
+    case 86 :
+      // set the night hours from the EEEPROM
+      n = EEPROM.read(1); break;
+
+    case 87 :
+      //clear EEEPROM      
+      for (int i = 0 ; i < 7 ; i++) {
+      //for (int i = 0 ; i < EEPROM.length() ; i++) {
+        EEPROM.write(i, 0);
+      } break;
+
+    case 88 :
+      //prints the first X digits of the EEPROM
+      temp[0] = readData();
+      if (temp[0] < EEPROM.length()) {
+         for (int i = 0 ; i < (temp[0]-1) ; i++) {
+            Serial.print(EEPROM.read(i));
+            Serial.print("\t");
+          }
+          Serial.println();
+      } break;
+
+      case 89 :
+        //write arbitrary value at arbitrary EEPROM address
+        //CAUTION!!
+        temp[0] = readData();
+        temp[1] = readData();
+        EEPROM.write(temp[0], temp[1]); break;
+
+    case 70 :
+      // read the automation status
+      if (automation) {
+        Serial.println("1");
+      }
+      else {
+        Serial.println("0"); 
+      } break;
+
+    case 71 :
       // turn both timers on
-      d = readData();
-      interval1 = (60 * d); //interval1 = (3600 * d);
-      n = readData();
-      interval2 = (60 * n); //interval2 = (3600 * n); 
-      Alarm.write(0, interval1); Alarm.enable(0);
-      Alarm.write(1, interval2); Alarm.enable(1);
-      alarmOnDisable = false;
-      alarmOffDisable = false; break;
-    case 68 :
+       greeneyAutomationOn(); break;
+      
+    case 72 :
       // turn both timers off
-      Alarm.disable(0);
-      Alarm.disable(1);
-      alarmOnDisable = true;
-      alarmOffDisable = true; break;
+      greeneyAutomationOff(); break;
+      
     case 99:
       //just dummy to cancel the current read, needed to prevent lock
       //when the PC side dropped the "w" that we sent
