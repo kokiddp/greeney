@@ -3,10 +3,11 @@ import time
 
 b = pyGreeney('/dev/ttyACM0')
 pin = 13
-day = 1
-night = 1
+#day = 1
+#night = 1
 
-b.output([pin], day, night)
+b.output([pin])
+#b.output([pin], day, night)
 
 b.setHigh(pin)
 time.sleep(10)
